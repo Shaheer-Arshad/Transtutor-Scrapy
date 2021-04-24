@@ -1,0 +1,57 @@
+import scrapy
+from ..items import TranstutorItem
+
+class Questions(scrapy.Spider):
+    name="tt"
+    start_urls = [
+        'https://www.transtutors.com/'
+    ]
+
+    def parse(self, response):
+
+        items = TranstutorItem()
+
+        all_li = response.css(".subjectcovered li")
+        
+      #  for i in all_li:
+
+        title = all_li.css("div.subject::text").get()
+        link = "https://www.transtutors.com" + all_li.css(".btmlnk a+ a::attr(href)").get()
+        
+
+
+        items["title"] = title
+        items["link"] = link
+
+        yield scrapy.Request(url=link,callback=self.sub_categories)
+
+    def sub_categories(self, response):
+
+        in_ui = response.css("ul.ltwo>li")
+
+        for a in in_ui:
+            sub_link= "https://www.transtutors.com" + in_ui.css("a::attr(href)").get()
+        # yield {"link":sub_link}
+
+            yield scrapy.Request(url=sub_link,callback=self.sub_category)
+
+    def sub_category(self, response):
+
+        ul =response.css("ul.inner-topics-covered li")
+
+        for b in ul:
+            question_link = b.css("a::attr(href)").get()
+                
+                
+            yield scrapy.Request(url=question_link,callback=self.parse_question)
+
+    def parse_question(self, response):
+
+        Category = response.xpath("/html/body/form/div[2]/div/section/div[3]/div[1]/div[1]/ol/li[3]/a/span/text()").get()
+        Subcategory = response.xpath("/html/body/form/div[2]/div/section/div[3]/div[1]/div[1]/ol/li[4]/a/span/text()").get()
+        title = response.xpath("/html/body/form/div[2]/div/section/div[3]/div[3]/div[1]/div[1]/h1/text()").getall()
+        question = response.css("#divDescription ::text").getall()
+        date= response.css("#spnQuestionSubmittedDate::text").get()
+
+        li = title
+ 
